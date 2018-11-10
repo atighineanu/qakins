@@ -90,7 +90,6 @@ func Upd_list_saver() {
 				basher.Bash([]string{"osc", "qam", "list", ">", "mainlist"}, "p")
 			}
 		} else {
-			//fmt.Printf("%s %s\n", now.Month(), stamp.Month)
 			fmt.Println("Oh boy... you haven't tested in a while! :-)")
 			basher.Bash([]string{"osc", "qam", "list", ">", "mainlist"}, "p")
 		}
@@ -102,7 +101,7 @@ func Upd_list_saver() {
 
 func Upd_finder() []Upd {
 	var c int
-	var Koka []Upd
+	var IncidJob []Upd
 	var Updlist, incid_info []string
 	var found Upd
 
@@ -117,16 +116,16 @@ func Upd_finder() []Upd {
 	for i := 0; i < len(Updlist); i++ {
 		for _, j := range Test_pkg_list {
 			if strings.Contains(Updlist[i], j) {
-				Koka = append(Koka, found)
-				Koka[c].Chan = make(map[string]string)
+				IncidJob = append(IncidJob, found)
+				IncidJob[c].Chan = make(map[string]string)
 				incid_info = strings.Split(Updlist[i-1], ":")
 				channel := incidsearch.Incidsrc(incid_info[3])
-				Koka[c].Inc = incid_info[3]
+				IncidJob[c].Inc = incid_info[3]
 				for _, l := range channel.Contents.Packages {
-					Koka[c].Name = append(Koka[c].Name, l)
+					IncidJob[c].Name = append(IncidJob[c].Name, l)
 				}
 				for _, k := range channel.Base.Channels {
-					Koka[c].Chan[k] = ""
+					IncidJob[c].Chan[k] = ""
 				}
 				c++
 			}
@@ -136,24 +135,22 @@ func Upd_finder() []Upd {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-	return Koka
+	return IncidJob
 }
 
-func Job_Distributor(Koka []Upd) {
-	for i := 0; i < len(Koka); i++ {
-		for key, _ := range Koka[i].Chan {
+func JobDistributor(IncidJob []Upd) {
+	for i := 0; i < len(IncidJob); i++ {
+		for key, _ := range IncidJob[i].Chan {
 			temp := strings.Split(key, ":")
 			for key2, value2 := range machines {
-				temp2 := strings.Split(key2, "_")
+				temp2 := strings.Split(key2, ":")
 				for k := 0; k < len(temp2); k++ {
-					if strings.Contains(temp[2], temp2[2]) {
-						if strings.Contains(temp[3], temp2[1]) {
-							if value2 == true {
-								fmt.Printf("Hooray! found machine!!! %s, for %s\n", key2, Koka[i].Name)
-								value2 = false
-								Koka[i].Chan[key] = key2
-								machines[key2] = false
-							}
+					if strings.Contains(temp[2], temp2[2]) && strings.Contains(temp[3], temp2[1]) && strings.Contains(temp[4], temp2[3]) {
+						if value2 == true {
+							fmt.Printf("Hooray! found machine!!! %s-%s, for %s\n", key2, temp[4], IncidJob[i].Name)
+							value2 = false
+							IncidJob[i].Chan[key] = key2
+							machines[key2] = false
 						}
 					}
 				}
@@ -163,22 +160,22 @@ func Job_Distributor(Koka []Upd) {
 }
 
 func main() {
-	machines["sles_11-SP4_SAP"] = true
-	machines["sles_12-SP0_SAP"] = true
-	machines["sles_12-SP1_SAP"] = true
-	machines["sles_12-SP2_SAP"] = true
-	machines["sles_12-SP3_SAP"] = true
-	machines["sles_15-SP0_SAP"] = true
+	machines["sles:11-SP4:SAP:x86_64"] = true
+	machines["sles:12-SP0:SAP:x86_64"] = true
+	machines["sles:12-SP1:SAP:x86_64"] = true
+	machines["sles:12-SP2:SAP:x86_64"] = true
+	machines["sles:12-SP3:SAP:x86_64"] = true
+	machines["sles:15-SP0:SAP:x86_64"] = true
 
 	Upd_list_saver()
 	mp := Upd_finder()
 
-	for _, i := range mp {
-		fmt.Printf("%v\n", i)
-	}
-	Job_Distributor(mp)
+	//for _, i := range mp {
+	//	fmt.Printf("%v\n", i)
+	//}
 
-	fmt.Printf("\n\nFollowing channgels were'nt covered yet:\n")
+	JobDistributor(mp)
+	fmt.Printf("\nFollowing channgels were'nt covered yet:\n")
 	for i := 0; i < len(mp); i++ {
 		for key, _ := range mp[i].Chan {
 			if mp[i].Chan[key] == "" {

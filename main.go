@@ -20,13 +20,18 @@ import (
 	"time"
 )
 
-//-----VARIABLES---------------------
+//-----VARIABLES---------------------,
 var arch = "x86_64"
 var Test_pkg_list = []string{"drbd", "saptune", "sapconf", "SAPHanaSR"}
+var machines = make(map[string]bool)
 
 //tmp := []string{"pwd"}
-//basher.Bash(tmp)*/
-var versions = "11|sp4 12|sp1 12|sp2 12|sp3 15| "
+//basher.Bash(tmp)
+type Distri struct {
+	Name    []string
+	Version []string
+	Flavor  []string
+}
 
 //-----END OF VARIABLES LIST---------
 
@@ -37,8 +42,9 @@ type Stamp struct {
 }
 
 type Upd struct {
-	name     string
-	channels []string
+	Inc  string
+	Name []string
+	Chan map[string]string
 }
 
 func Upd_list_saver() {
@@ -94,10 +100,12 @@ func Upd_list_saver() {
 	}
 }
 
-func Upd_finder() map[string]Upd {
+func Upd_finder() []Upd {
+	var c int
+	var Koka []Upd
 	var Updlist, incid_info []string
-	var found map[string]Upd
-	found = make(map[string]Upd)
+	var found Upd
+
 	osclist, err := os.Open("mainlist")
 	if err != nil {
 		log.Fatalf("couldn't open file...%s", err)
@@ -106,13 +114,21 @@ func Upd_finder() map[string]Upd {
 	for scanner.Scan() {
 		Updlist = append(Updlist, fmt.Sprintln(scanner.Text()))
 	}
-
 	for i := 0; i < len(Updlist); i++ {
 		for _, j := range Test_pkg_list {
 			if strings.Contains(Updlist[i], j) {
+				Koka = append(Koka, found)
+				Koka[c].Chan = make(map[string]string)
 				incid_info = strings.Split(Updlist[i-1], ":")
-				found[incid_info[3]] = Upd{name: j, channels: []string{""}}
-				//tmp2.name = j
+				channel := incidsearch.Incidsrc(incid_info[3])
+				Koka[c].Inc = incid_info[3]
+				for _, l := range channel.Contents.Packages {
+					Koka[c].Name = append(Koka[c].Name, l)
+				}
+				for _, k := range channel.Base.Channels {
+					Koka[c].Chan[k] = ""
+				}
+				c++
 			}
 		}
 	}
@@ -120,35 +136,61 @@ func Upd_finder() map[string]Upd {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-	return found
+	return Koka
 }
 
-func Upd_chan_sorter(found map[string]Upd) map[string]incidsearch.Incident {
-	var catalogue map[string]incidsearch.Incident
-	for key, value := range found {
-		channel := incidsearch.Incidsrc(key)
-	}
-	return found
-}
-
-/*
-func Repo_detective(chanlist map[string][]string) {
-	for _, j := range chanlist {
-		for i := 0; i < len(j); i++ {
-			//chanlist[j[i]] = strings.Replace(chanlist[j[i]], ":", "_", -1)
-			fmt.Println(j[i])
+func Job_Distributor(Koka []Upd) {
+	for i := 0; i < len(Koka); i++ {
+		for key, _ := range Koka[i].Chan {
+			temp := strings.Split(key, ":")
+			for key2, value2 := range machines {
+				temp2 := strings.Split(key2, "_")
+				for k := 0; k < len(temp2); k++ {
+					if strings.Contains(temp[2], temp2[2]) {
+						if strings.Contains(temp[3], temp2[1]) {
+							if value2 == true {
+								fmt.Printf("Hooray! found machine!!! %s, for %s\n", key2, Koka[i].Name)
+								value2 = false
+								Koka[i].Chan[key] = key2
+								machines[key2] = false
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }
-*/
 
 func main() {
-	//fmt.Println("wohooo")
-	//basher.Bash([]string{"ls", "-alh"})
+	machines["sles_11-SP4_SAP"] = true
+	machines["sles_12-SP0_SAP"] = true
+	machines["sles_12-SP1_SAP"] = true
+	machines["sles_12-SP2_SAP"] = true
+	machines["sles_12-SP3_SAP"] = true
+	machines["sles_15-SP0_SAP"] = true
+
 	Upd_list_saver()
-	//var inc = flag.String("inc,", "inci", "inci")
-	//fmt.Println(Upd_finder())
-	temp := Upd_chan_sorter(Upd_finder())
-	fmt.Println("\n", temp)
-	//Repo_detective(temp)
+	mp := Upd_finder()
+
+	for _, i := range mp {
+		fmt.Printf("%v\n", i)
+	}
+	Job_Distributor(mp)
+
+	fmt.Printf("\n\nFollowing channgels were'nt covered yet:\n")
+	for i := 0; i < len(mp); i++ {
+		for key, _ := range mp[i].Chan {
+			if mp[i].Chan[key] == "" {
+				fmt.Printf("%s\n", key)
+			}
+		}
+	}
+
+	/*for key := range mp {
+		for key2, value2 := range mp[key].Chan {
+			fmt.Printf("BIG KEY: %v\n KEY: %v  VALUE: %v\n", key, key2, value2)
+		}
+	}*/
+
 }

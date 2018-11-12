@@ -20,18 +20,10 @@ import (
 	"time"
 )
 
-//-----VARIABLES---------------------,
+//-----VARIABLES---------------------
 var arch = "x86_64"
 var Test_pkg_list = []string{"drbd", "saptune", "sapconf", "SAPHanaSR", "yast2-network", "libqca2", "pacemaker"}
 var machines = make(map[string]bool)
-
-//tmp := []string{"pwd"}
-//basher.Bash(tmp)
-type Distri struct {
-	Name    []string
-	Version []string
-	Flavor  []string
-}
 
 //-----END OF VARIABLES LIST---------
 
@@ -57,7 +49,6 @@ type Upd struct {
 func Upd_list_saver() {
 	var stamp Stamp
 	var temp string
-	//var Tmp1 []string
 	var months map[string]int
 	months = make(map[string]int)
 	months["Jan"] = 1
@@ -120,6 +111,7 @@ func UpdFinder() []Upd {
 	for scanner.Scan() {
 		Updlist = append(Updlist, fmt.Sprintln(scanner.Text()))
 	}
+
 	for i := 0; i < len(Updlist); i++ {
 		for _, j := range Test_pkg_list {
 			if strings.Contains(Updlist[i], j) {
@@ -138,7 +130,6 @@ func UpdFinder() []Upd {
 			}
 		}
 	}
-
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
@@ -146,7 +137,6 @@ func UpdFinder() []Upd {
 }
 
 func RepoHandler(cov []Upd) {
-	//http://download.suse.de/ibs/SUSE:/Maintenance:/${RR}/"${i}
 	const prefixurl = "http://download.suse.de/ibs/SUSE:/Maintenance:/"
 	for i := 0; i < len(cov); i++ {
 		for j, _ := range cov[i].Chan {
@@ -158,7 +148,6 @@ func RepoHandler(cov []Upd) {
 			}
 		}
 	}
-
 }
 
 func JobStarter(IncidJob []Upd) {
@@ -203,7 +192,6 @@ func JobDistributor(IncidJob []Upd) []Upd {
 			}
 		}
 	}
-	//to repair!!!! --> Repaired! :)
 	return IncidJob
 }
 
@@ -225,7 +213,6 @@ func main() {
 
 	Upd_list_saver()
 	mp := UpdFinder()
-
 	cov := JobDistributor(mp)
 	fmt.Printf("\nFollowing channgels were'nt covered yet:\n")
 	for i := 0; i < len(mp); i++ {
@@ -235,8 +222,8 @@ func main() {
 			}
 		}
 	}
-	RepoHandler(mp)
 
+	RepoHandler(mp)
 	for i := 0; i < len(cov); i++ {
 		fmt.Printf("\n%v - %v\n", cov[i].Inc, cov[i].Name)
 		for key, value := range cov[i].Chan {

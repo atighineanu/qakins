@@ -50,7 +50,10 @@ testing qam@SUSE updates.
 	    ":" before section "1" (you can use any-
 	    thing else "_", "-", e.t.c.)
 
-	* should have your SSH keys installed
+	* should have your SSH keys installed, fire-
+	  wall settings for port 22 covered, and 
+	  obviously sshd running. (beware: on 
+	  openSUSE LEAP sshd.service sometimes stops!)
 
 	* should have connection to network, or...
 	  if they are isolated -> should have locally

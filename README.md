@@ -1,6 +1,4 @@
-#qamkins - automation tool for on-spot
-
-####testing qam@SUSE updates.
+#qamkins - automation tool for on-spot testing qam@SUSE updates.
 
 #### * What it does:
 Qamkins lists all the updates in the QAM queue, if there are some matching the desired package names - it searches for available VMs (qemu-kvm, libvirt, didn't test with XEN yet) and fires a test for respective update. Qamkins processes not just the S:M:INC:RR update, but also all it's channels. If a machine corresponding to the update channel is found and free - the job starts. If the machine is found but busy - channel will be registered as "Wainting". And, if the correspondig machine for the update channel isn't found - it is FAIL.
@@ -43,7 +41,7 @@ Qamkins lists all the updates in the QAM queue, if there are some matching the d
      |    |  |    |
      1    2  3    4
   ```
-  ,where:
+  ,where:s
   - 1 - Product
   - 2 - Version
   - 3 - Flavour (you can pile up more

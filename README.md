@@ -10,20 +10,23 @@ testing qam@SUSE updates.
 * should have installed qemu-guest-agent
  (properly setup & running)
  
-   - Note: for old distros qemu-ga does not run after installation and addig another Virtio controller to the VM. Try to virsh edit <VM>, and add next to the "SPICE" channel in the XML, which looks like:
+     - Note: for old distros qemu-ga does not run after installation and addig another Virtio controller to the VM. Try to virsh edit <VM>, and add next to the "SPICE" channel in the XML, which looks like:
  
-```<channel type='spicevmc'>```
-```<target type='virtio' name='com.redhat.spice.0'/>```
-```<address type='virtio-serial' controller='0' bus='0' port='1'/>```
-```</channel>```
+```
+   <channel type='spicevmc'>
+      <target type='virtio' name='com.redhat.spice.0'/>
+	  <address type='virtio-serial' controller='0' bus='0' port='1'/>
+   </channel>`
+```
 
  add this: 
  
- ```<channel type='unix'>```
- ```<target type='virtio' name='org.qemu.guest_agent.0'/>```
- ```<address type='virtio-serial' controller='0' bus='0' port='2'>```
- ``` </channel>```
-
+```
+ <channel type='unix'>
+ <target type='virtio' name='org.qemu.guest_agent.0'/>
+ <address type='virtio-serial' controller='0' bus='0' port='2'>
+ </channel>
+```
     - (be aware that if you have more virtio controllers, you don't mix the port numbers, and in your case it might be port='3' or '4' and so on...)
  
     - restart qemu-ga (rcqemu-ga for 11sp4)

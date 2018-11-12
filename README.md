@@ -12,7 +12,8 @@ Requirements:
 	* should have a specific syntax of <domname>
 	  SLE:11-SP4:HA:x86_64
 	   1    2      3   4
-	  -------------------
+
+	      ,where:
 		1 - Product
 		2 - Version
 		3 - Flavour (you can pile up more

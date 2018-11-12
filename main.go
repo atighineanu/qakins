@@ -22,7 +22,7 @@ import (
 
 //-----VARIABLES---------------------,
 var arch = "x86_64"
-var Test_pkg_list = []string{"drbd", "saptune", "sapconf", "SAPHanaSR"}
+var Test_pkg_list = []string{"drbd", "saptune", "sapconf", "SAPHanaSR", "yast2-network", "libqca2", "pacemaker"}
 var machines = make(map[string]bool)
 
 //tmp := []string{"pwd"}
@@ -40,6 +40,13 @@ type Stamp struct {
 	Month string
 	Day   int64
 }
+
+/* may be obsolete, let's see...
+type Job struct {
+	Machine  string
+	Repolink string
+}
+*/
 
 type Upd struct {
 	Inc  string
@@ -99,7 +106,7 @@ func Upd_list_saver() {
 	}
 }
 
-func Upd_finder() []Upd {
+func UpdFinder() []Upd {
 	var c int
 	var IncidJob []Upd
 	var Updlist, incid_info []string
@@ -138,56 +145,102 @@ func Upd_finder() []Upd {
 	return IncidJob
 }
 
-func JobDistributor(IncidJob []Upd) {
+func RepoHandler(cov []Upd) {
+	//http://download.suse.de/ibs/SUSE:/Maintenance:/${RR}/"${i}
+	const prefixurl = "http://download.suse.de/ibs/SUSE:/Maintenance:/"
+	for i := 0; i < len(cov); i++ {
+		for j, _ := range cov[i].Chan {
+			if cov[i].Chan[j] != "WAITING" && cov[i].Chan[j] != "FAIL." {
+				reposufix := "/SUSE:Maintenance:" + cov[i].Inc + ".repo"
+				updlink := prefixurl + cov[i].Inc + "/" + strings.Replace(j, ":", "_", -1)
+				repolink := updlink + reposufix
+				fmt.Println(repolink)
+			}
+		}
+	}
+
+}
+
+func JobStarter(IncidJob []Upd) {
 	for i := 0; i < len(IncidJob); i++ {
 		for key, _ := range IncidJob[i].Chan {
-			temp := strings.Split(key, ":")
-			for key2, value2 := range machines {
-				temp2 := strings.Split(key2, ":")
-				for k := 0; k < len(temp2); k++ {
-					if strings.Contains(temp[2], temp2[2]) && strings.Contains(temp[3], temp2[1]) && strings.Contains(temp[4], temp2[3]) {
-						if value2 == true {
-							fmt.Printf("Hooray! found machine!!! %s-%s, for %s\n", key2, temp[4], IncidJob[i].Name)
-							value2 = false
-							IncidJob[i].Chan[key] = key2
-							machines[key2] = false
-						}
-					}
-				}
+			if strings.Contains(IncidJob[i].Chan[key], ":") {
+				basher.Bash([]string{"sudo", "virsh", "domifaddr", IncidJob[i].Chan[key], "--source", "agent", "|", "grep", "eth", "|", "awk '{print $4}'"}, "s")
 			}
 		}
 	}
 }
 
-func main() {
-	machines["sles:11-SP4:SAP:x86_64"] = true
-	machines["sles:12-SP0:SAP:x86_64"] = true
-	machines["sles:12-SP1:SAP:x86_64"] = true
-	machines["sles:12-SP2:SAP:x86_64"] = true
-	machines["sles:12-SP3:SAP:x86_64"] = true
-	machines["sles:15-SP0:SAP:x86_64"] = true
-
-	Upd_list_saver()
-	mp := Upd_finder()
-
-	//for _, i := range mp {
-	//	fmt.Printf("%v\n", i)
-	//}
-
-	JobDistributor(mp)
-	fmt.Printf("\nFollowing channgels were'nt covered yet:\n")
-	for i := 0; i < len(mp); i++ {
-		for key, _ := range mp[i].Chan {
-			if mp[i].Chan[key] == "" {
-				fmt.Printf("%s\n", key)
+func JobDistributor(IncidJob []Upd) []Upd {
+	flg := false
+	var c int
+	for i := 0; i < len(IncidJob); i++ {
+		for key, _ := range IncidJob[i].Chan {
+			temp := strings.Split(key, ":")
+			for key2, value2 := range machines {
+				temp2 := strings.Split(key2, ":")
+				if strings.Contains(temp[2], temp2[2]) && strings.Contains(temp[3], temp2[1]) && strings.Contains(temp[4], temp2[3]) {
+					c = 0
+					flg = true
+					if value2 == true {
+						fmt.Printf("Found machine!!! %s, for %s %s\n", key2, IncidJob[i].Name, IncidJob[i].Inc)
+						value2 = false
+						IncidJob[i].Chan[key] = key2
+						machines[key2] = false
+					} else {
+						c = 0
+						flg = true
+						IncidJob[i].Chan[key] = "WAITING"
+					}
+				} else {
+					c++
+					flg = false
+				}
+				if c == len(machines) && flg == false {
+					IncidJob[i].Chan[key] = "FAIL."
+					c = 0
+				}
 			}
 		}
 	}
+	//to repair!!!! --> Repaired! :)
+	return IncidJob
+}
 
-	/*for key := range mp {
-		for key2, value2 := range mp[key].Chan {
-			fmt.Printf("BIG KEY: %v\n KEY: %v  VALUE: %v\n", key, key2, value2)
+func main() {
+
+	machines["SLE:11-SP4:HA:x86_64"] = true
+	machines["SLE:12-SP0:HA:x86_64"] = true
+	machines["SLE:12-SP1:HA:x86_64"] = true
+	machines["SLE:12-SP2:HA:x86_64"] = true
+	machines["SLE:12-SP3:HA:x86_64"] = true
+	machines["SLE:15-SP0:HA:x86_64"] = true
+	machines["SLE:11-SP4:SAP:x86_64"] = true
+	machines["SLE:12-SP0:SAP:x86_64"] = true
+	machines["SLE:12-SP1:SAP:x86_64"] = true
+	machines["SLE:12-SP2:SAP:x86_64"] = true
+	machines["SLE:12-SP3:SAP:x86_64"] = true
+	machines["SLE:15-SP0:SAP:x86_64"] = true
+	machines["SLE:11-SP4:SERVER:x86_64"] = true
+
+	Upd_list_saver()
+	mp := UpdFinder()
+
+	cov := JobDistributor(mp)
+	fmt.Printf("\nFollowing channgels were'nt covered yet:\n")
+	for i := 0; i < len(mp); i++ {
+		for key, _ := range mp[i].Chan {
+			if mp[i].Chan[key] == "FAIL." {
+				fmt.Printf("%s  %s  %s\n", mp[i].Inc, mp[i].Name, key)
+			}
 		}
-	}*/
+	}
+	RepoHandler(mp)
 
+	for i := 0; i < len(cov); i++ {
+		fmt.Printf("\n%v - %v\n", cov[i].Inc, cov[i].Name)
+		for key, value := range cov[i].Chan {
+			fmt.Printf("%v  -  %v\n", key, value)
+		}
+	}
 }

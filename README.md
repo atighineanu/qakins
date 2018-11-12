@@ -1,17 +1,18 @@
 qamkins - automation tool for on-spot 
 testing qam@SUSE updates.
 
-Requirements:
+#H3 Requirements:
 
-- qemu-kvm, libvirt installed
+#H4 - qemu-kvm, libvirt installed
 
-- VMs:
+#H4 - VMs:
 	* should have installed qemu-guest-agent
 	  (properly setup & running)
 
 	* should have a specific syntax of <domname>
 	  SLE:11-SP4:HA:x86_64
-	   1    2      3   4
+	   1    2     3    4
+		   1    2      3   4
 
 	      ,where:
 		1 - Product

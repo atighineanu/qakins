@@ -1,22 +1,25 @@
-qamkins - automation tool for on-spot 
-testing qam@SUSE updates.
+#qamkins - automation tool for on-spot#
+####testing qam@SUSE updates.####
+#### * What it does:####
+Qamkins lists all the updates in the QAM queue, if there are some matching the desired package names - it searches for available VMs (qemu-kvm, libvirt, didn't test with XEN yet) and fires a test for respective update. Qamkins processes not just the S:M:INC:RR update, but also all it's channels. If a machine corresponding to the update channel is found and free - the job starts. If the machine is found but busy - channel will be registered as "Wainting". And, if the correspondig machine for the update channel isn't found - it is FAIL.
 
-#H3 Requirements:
 
-#H4 - qemu-kvm, libvirt installed
+## Requirements:
 
-# H4 - VMs:
+### - qemu-kvm, libvirt installed
+
+### - VMs:
 
 * should have installed qemu-guest-agent
  (properly setup & running)
  
-     - Note: for old distros qemu-ga does not run after installation and addig another Virtio controller to the VM. Try to virsh edit <VM>, and add next to the "SPICE" channel in the XML, which looks like:
+     - Note: for old distros qemu-ga does not run after installation and adding another Virtio controller to the VM. Try to virsh edit <VM>, and add next to the "SPICE" channel in the XML, which looks like:
  
 ```
    <channel type='spicevmc'>
       <target type='virtio' name='com.redhat.spice.0'/>
 	  <address type='virtio-serial' controller='0' bus='0' port='1'/>
-   </channel>`
+   </channel>
 ```
 
  add this: 
@@ -31,21 +34,21 @@ testing qam@SUSE updates.
  
     - restart qemu-ga (rcqemu-ga for 11sp4)
 
-
 * should have a specific syntax of <domname>
 
-  ```SLE:11-SP4:HA:x86_64```
-   
-   ```1....2.....3...4 ```
-  
-      ,where:
-	1 - Product
-	2 - Version
-	3 - Flavour (you can pile up more
-	modules like HA_SDK_BASE_SAP_WE)
-	4 - Architecture
+  ```
+  SLE:11-SP4:HA:x86_64
+     |    |  |    |
+     1    2  3    4
+  ```
+  ,where:
+  - 1 - Product
+  - 2 - Version
+  - 3 - Flavour (you can pile up more
+	 modules like```HA_SDK_BASE_SAP_WE```)
+  - 4 - Architecture
 
-   !Note: It is recommended to add stuff 
+ - !Note: It is recommended to add stuff 
     AFTER the section "4", e.g. - a suffix 
     to the VM name (whatever you want).
     If you want to add a prefix - do not use
@@ -59,5 +62,17 @@ testing qam@SUSE updates.
 
 * should have connection to network, or...
   if they are isolated -> should have locally
-  mounted update repositories. 
+  mounted update repositories.
+
+
+### - osc
+Set up your osc alias in .bashrc or set it for your session alias="correspondingurl"
+
+
+### - sudoers
+Set up your user to be in the sudoers list (e.g. passwordless sudo)
+
+
+
+
  

@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt" //incident/jsonrdr/READhttp
 	"io/ioutil"
 	"log"
@@ -145,17 +144,6 @@ type Install struct {
 	Output       string
 	Version      string
 }
-
-var inc = flag.String("inc", "incident", "Provide the maintenance incident")
-var dl = flag.String("dl", "deadline", "Depicts the deadline field ")
-var version = flag.String("v", "version", "Shows field containing the Version")
-var prod = flag.String("p", "product", "Shows field for the Product name of maint.incident")
-var repo = flag.String("repo", "repositories", "Shows repository list for the incident")
-var arch = flag.String("arch", "", "Shows the architecture(s)/or provide arch to grep for info relevant against the arch")
-var ch = flag.String("ch", "chan", "Shows the update channels")
-var di = flag.String("di", "distro", "Provide the distro to search for relevant information")
-var n = flag.String("n", "name", "Shows the package name for the given incident")
-var src = flag.String("src", "source", "Shows the source name with version-release")
 
 func UrlFetcher(link string) ([]byte, error) {
 	response, err := http.Get(link)

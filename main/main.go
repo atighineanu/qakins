@@ -33,7 +33,7 @@ var (
 )
 
 //var Test_pkg_list = []string{"drbd", "saptune", "sapconf", "SAPHanaSR", "yast2-network", "libqca2", "pacemaker"}
-var Test_pkg_list = []string{"helm", "kubernetes-salt", "python"}
+var Test_pkg_list = []string{"helm", "kubernetes-salt", "python", "yast2-hana-update"}
 var machines = make(map[string]bool)
 var Workdir = "/home/atighineanu/"
 
@@ -237,8 +237,12 @@ func main() {
 			}
 		}*/
 
+	List := utils.ReadApi()
+
 	for _, k := range Test_pkg_list {
-		Repo := utils.FindInApi(utils.ReadApi(), k)
-		fmt.Println(Repo)
+		Repos := utils.FindInApi(List, k)
+		if len(Repos) > 0 {
+			fmt.Printf("%s: %s\n", k, Repos)
+		}
 	}
 }

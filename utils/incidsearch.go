@@ -3,12 +3,14 @@ package utils
 import (
 	"encoding/json"
 	"fmt" //incident/jsonrdr/READhttp
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 func HTTPREADER(url string) []byte {
@@ -155,7 +157,6 @@ func UrlFetcher(link string) ([]byte, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	if response.StatusCode != 200 {
 		log.Fatal("Unexpected status code", response.StatusCode)
 	}
@@ -170,6 +171,60 @@ func ReadApi() []string {
 	}
 	json.Unmarshal(body, &IncidentNumberList)
 	return IncidentNumberList
+}
+
+func IssueSliceHandler() []string {
+	var f *os.File
+	t := time.Now()
+	fileinfo, err := os.Lstat("IssueNumberList")
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "IssueSliceSaver->os.Lstat: file cannot be found!  %s\n", err)
+		f, err = os.Create("IssueNumberList")
+		if err != nil {
+			fmt.Fprintf(os.Stdout, "IssueSliceSaver->os.Create: file couldn't be created!  %s\n", err)
+		}
+		buf, err := json.Marshal(ReadApi())
+		if err != nil {
+			fmt.Fprintf(os.Stdout, "IssueSliceSaver->json.Marshal: couldn't Marshal data!  %s\n", err)
+		}
+		_, err = f.Write(buf) //I don't need (so far) to know the exact amount of bytes written to file
+		if err != nil {
+			fmt.Fprintf(os.Stdout, "IssueSliceSaver->f.Write: couldn't write to file!  %s\n", err)
+		}
+		defer f.Close()
+	} else {
+		created := fileinfo.ModTime()
+		if t.Sub(created) > 24*time.Hour {
+			f, err = os.OpenFile("IssueNumberList", os.O_RDWR, 0644)
+			if err != nil {
+				fmt.Fprintf(os.Stdout, "IssueSliceSaver->os.OpenFile: file couldn't be opened!  %s\n", err)
+			}
+			buf, err := json.Marshal(ReadApi())
+			if err != nil {
+				fmt.Fprintf(os.Stdout, "IssueSliceSaver->json.Marshal: couldn't Marshal data!  %s\n", err)
+			}
+			_, err = f.Write(buf) //I don't need (so far) to know the exact amount of bytes written to file
+			if err != nil {
+				fmt.Fprintf(os.Stdout, "IssueSliceSaver->f.Write: couldn't write to file!  %s\n", err)
+			}
+			defer f.Close()
+		}
+	}
+	f, err = os.OpenFile("IssueNumberList", os.O_RDWR, 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "IssueSliceSaver->os.OpenFile: file couldn't be opened!  %s\n", err)
+	}
+
+	var content []byte
+	var IncidentNumberList []string
+	content, err = ioutil.ReadFile("IssueNumberList")
+	if err != nil && err != io.EOF {
+		fmt.Fprintf(os.Stdout, "IssueSliceSaver->f.Read: file couldn't be red!  %s\n", err)
+	}
+	json.Unmarshal(content, &IncidentNumberList)
+	fmt.Println(IncidentNumberList)
+	return IncidentNumberList
+
 }
 
 func FindInApi(IncidentNumberList []string, Package string) []string {
@@ -204,7 +259,6 @@ func FindInApi(IncidentNumberList []string, Package string) []string {
 			}
 		}
 	}
-
 	if len(Repos) == 0 {
 		fmt.Println("Could not find any active update with this package...")
 	}

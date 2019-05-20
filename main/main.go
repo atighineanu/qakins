@@ -237,7 +237,7 @@ func main() {
 			}
 		}*/
 
-	List := utils.ReadApi()
+	List := utils.IssueSliceHandler()
 
 	for _, k := range Test_pkg_list {
 		Repos := utils.FindInApi(List, k)

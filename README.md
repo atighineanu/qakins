@@ -1,3 +1,16 @@
+#qakins - automation tool for update finding/job triggering of Maintenance Updates
+### Features:
+   - spawns a Concourse CI pipeline with parameters given by PipelineCfg.json and package name, incident number
+   - the pipeline contains jobs that perform tasks (it is your choice what you wrap and how you want the the jobs,
+     however, if you test CaaSP3.0 - you might want to use a container from this repo: 
+     https://github.com/atighineanu/mkcaasp-containerized )
+   - it covers x86_64 arch on openstack - terraform (so far)
+
+
+
+
+
+# Version 0.1.0 (Workflow for a local list of KVM/XEN Virtual Machines)
 #qamkins - automation tool for on-spot testing qam@SUSE updates.
 
 #### * What it does:

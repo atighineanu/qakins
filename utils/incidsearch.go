@@ -222,45 +222,55 @@ func IssueSliceHandler() []string {
 		fmt.Fprintf(os.Stdout, "IssueSliceSaver->f.Read: file couldn't be red!  %s\n", err)
 	}
 	json.Unmarshal(content, &IncidentNumberList)
-	fmt.Println(IncidentNumberList)
 	return IncidentNumberList
-
 }
 
-func FindInApi(IncidentNumberList []string, Package string) []string {
-	var incident Incident
+func FindInApi(IncidentNumberList []string, Package string) ([]string, *Incident) {
+	var incident, found Incident
 	var Repos []string
-	for i := 5000; /*len(IncidentNumberList) - 1000*/ i < len(IncidentNumberList); i++ {
+	for i := 1; /*len(IncidentNumberList) - 1000*/ i < len(IncidentNumberList); i++ { // HERE I SWEEP TRHOUGH ALL ISSUES 1 - 12K
 		body, err := UrlFetcher("https://maintenance.suse.de/api/incident/" + IncidentNumberList[i])
 		if err != nil {
 			log.Fatal(err)
 		}
-		json.Unmarshal(body, &incident)
+		json.Unmarshal(body, &incident) //UNMARSHALLING THE RESPONSE OF MAINTENANCE API INTO AN "INCIDENT" DATA TYPE
 		if incident.Base.State == "active" {
 			for _, k := range incident.Contents.Packages {
 				if strings.Contains(k, Package) {
-					//fmt.Printf("Found an update: %s  %s  %s\n", k, IncidentNumberList[i], incident.Base.Repositories)
 					for _, Repository := range incident.Base.Repositories {
-						if strings.Contains(Repository, "x86_64") && !strings.Contains(Repository, "DEBUG") {
+						if strings.Contains(Repository, "x86_64") && !strings.Contains(Repository, "DEBUG") { //EXCLUDING DEBUG, COVERING 86_64 (SO FAR)
+							// THE REPOSITORY STRUCTURE IS PRETTY HARDCODED...
 							Repo := "http://download.suse.de/ibs/SUSE:/Maintenance:/" + IncidentNumberList[i] + "/" + Repository + "/SUSE:Maintenance:" + IncidentNumberList[i] + ".repo"
 							out, err := exec.Command("curl", []string{"-s", Repo}...).CombinedOutput()
 							if err != nil {
 								fmt.Fprintf(os.Stdout, "Couldn't open the link...%s\n", err)
 							}
 							tmp := fmt.Sprintf("%s", string(out))
-							//fmt.Printf("%s:", IncidentNumberList[i])
+
+							// CHECKING IF .repo FILE FROM COMPOSED LINK IS REAL
 							if strings.Contains(tmp, "key") && strings.Contains(tmp, IncidentNumberList[i]) {
-								//fmt.Printf("Repo for the package %s exists! Success.   ", Package)
-								Repos = append(Repos, Repo)
+								fmt.Printf("Repo for the package %s exists! Success.   \n", Package)
+								count := 0
+								// HERE I CHECK FOR DUPLICATE .Repo FILES... AND THEN ADDING IT TO Repos SLICE
+								for _, k := range Repos {
+									if k == Repo {
+										count++
+									}
+								}
+								if count == 0 && strings.Contains(strings.ToLower(Repo), "caasp") && strings.Contains(Repo, "3.0") {
+									Repos = append(Repos, Repo)
+								}
+								json.Unmarshal(body, &found)
 							}
 						}
 					}
 				}
 			}
 		}
+		time.Sleep(1000 * time.Microsecond)
 	}
 	if len(Repos) == 0 {
 		fmt.Println("Could not find any active update with this package...")
 	}
-	return Repos
+	return Repos, &found
 }

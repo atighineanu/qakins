@@ -11,12 +11,14 @@ package main
 import (
 	"basher"
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"incidsearch"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"qamkins/utils"
 	"strings"
 	"time"
@@ -33,7 +35,7 @@ var (
 )
 
 //var Test_pkg_list = []string{"drbd", "saptune", "sapconf", "SAPHanaSR", "yast2-network", "libqca2", "pacemaker"}
-var Test_pkg_list = []string{"helm", "kubernetes-salt", "python", "yast2-hana-update"}
+var Test_pkg_list = []string{"wicked", "glib2", "cloud-init"} //"helm", "kubernetes-salt", "sles12-velum-image", "velum"} //, "python", "yast2-hana-update", "sapconf", "haproxy"}
 var machines = make(map[string]bool)
 var Workdir = "/home/atighineanu/"
 
@@ -50,11 +52,12 @@ func Upd_list_saver() {
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "Couldn't execute the ls -alh $Workdir command; check your variables or Env... %s", err)
 	}
+
 	osccmd := []string{"qam", "list"}
 	//osccmd := "qam list > mainlist"
 	if strings.Contains(fmt.Sprintf("%s", string(out)), "mainlist") {
 		now := time.Now()
-		information, err := os.Lstat(Workdir + "mainlist")
+		information, err := os.Lstat(filepath.Join(Workdir, "mainlist"))
 		if err != nil {
 			fmt.Fprintf(os.Stdout, "bad! %s", err)
 		}
@@ -237,12 +240,35 @@ func main() {
 			}
 		}*/
 
+	//----------------------CHECKING ALL THE ACTIVE UPDATES---------------------------------------
 	List := utils.IssueSliceHandler()
 
+	var a utils.PipelineCfg
+	f, err := os.Open("../PipelineCfg.json")
+	defer f.Close()
+	if err != nil {
+		log.Printf("Error: %s\n", err)
+	}
+	if err := json.NewDecoder(f).Decode(&a); err != nil {
+		log.Printf("Error: %s\n", err)
+	}
+
 	for _, k := range Test_pkg_list {
-		Repos := utils.FindInApi(List, k)
+		a.PackageName = k
+		Repos, Incident := utils.FindInApi(List, k)
 		if len(Repos) > 0 {
-			fmt.Printf("%s: %s\n", k, Repos)
+			fmt.Printf("%s \n %v\n", Repos, Incident.Base.ID)
+			//fmt.Printf("%s:%v:%v %v\n", k, Incident.Base.ID, Incident.Requests.Maintenance_release[0], Incident.Checkers.Checks.Binary[0].Version)
+			if Incident != nil {
+				job := utils.ConcourseRunner(Repos[0], *Incident, a)
+				out, err := job.CombinedOutput()
+				if err != nil {
+					fmt.Fprintf(os.Stdout, "error: %s", err)
+				}
+				fmt.Println(fmt.Sprintf("%s", string(out)))
+			}
 		}
 	}
+
+	//--------------------FIRING A CONCOURSE PIPELINE--------------------------------
 }

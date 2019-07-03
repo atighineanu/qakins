@@ -1,0 +1,5 @@
+{
+    "Username": "docker user",
+    "Password": "docker pwd",
+    "DockerRepo": "docker repository" 
+}

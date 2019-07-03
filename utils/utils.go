@@ -17,6 +17,13 @@ type SSHInfo struct {
 	IP   string
 }
 
+type PipelineCfg struct {
+	Username    string
+	Password    string
+	DockerRepo  string
+	PackageName string
+}
+
 func (s *SSHInfo) Command(cmd ...string) *exec.Cmd {
 
 	arg := append(
@@ -35,4 +42,16 @@ func SSHPrinter(command []string, user SSHInfo) string {
 		fmt.Printf("Bad! Error at runng osc thourgh SSH... %s\n", err)
 	}
 	return fmt.Sprintf("%s", string(out))
+}
+
+//fly -t tutorial sp -p NEW_PIPELINE -c pipeline.yml -v repo=http://download.suse.de/ibs/SUSE:/Maintenance:/11566/SUSE_Updates_SUSE-CAASP_3.0_x86_64/SUSE:Maintenance:11566.repo -n
+
+func ConcourseRunner(Repo string, Incident Incident, config PipelineCfg) *exec.Cmd {
+	arg := []string{"-t", "tutorial", "sp", "-p", fmt.Sprintf("%s:%s:%s", config.PackageName, Incident.Base.Project, Incident.Update.Severity), "-c", "../main_pipeline.yml", "\\",
+		"-v", fmt.Sprintf("repo=%s", Repo), "-n", "\\",
+		"-v", fmt.Sprintf("user=%s", config.Username), "-n", "\\",
+		"-v", fmt.Sprintf("password=%s", config.Password), "-n", "\\",
+		"-v", fmt.Sprintf("docker_repository=%s", config.DockerRepo), "-n", "\\"}
+	out := exec.Command("fly", arg...)
+	return out
 }

@@ -1,4 +1,5 @@
 # qakins - automation tool for update finding/job triggering of Maintenance Updates
+# Version 0.2.0 (Concourse CI pipeline Firerer)
 ### Features:
    - spawns a Concourse CI pipeline with parameters given by PipelineCfg.json and package name, incident number
    - the pipeline contains jobs that perform tasks (it is your choice what you wrap and how you want the the jobs,
@@ -14,7 +15,7 @@
 
  
   
-  
+
 
 
 # Version 0.1.0 (Workflow for a local list of KVM/XEN Virtual Machines)

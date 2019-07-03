@@ -238,7 +238,7 @@ func FindInApi(IncidentNumberList []string, Package string) ([]string, *Incident
 			for _, k := range incident.Contents.Packages {
 				if strings.Contains(k, Package) {
 					for _, Repository := range incident.Base.Repositories {
-						if strings.Contains(Repository, "x86_64") && !strings.Contains(Repository, "DEBUG") { //EXCLUDING DEBUG, COVERING 86_64 (SO FAR)
+						if strings.Contains(Repository, "x86_64") && !strings.Contains(Repository, "DEBUG") { //EXCLUDING DEBUG, COVERING x86_64 (SO FAR)
 							// THE REPOSITORY STRUCTURE IS PRETTY HARDCODED...
 							Repo := "http://download.suse.de/ibs/SUSE:/Maintenance:/" + IncidentNumberList[i] + "/" + Repository + "/SUSE:Maintenance:" + IncidentNumberList[i] + ".repo"
 							out, err := exec.Command("curl", []string{"-s", Repo}...).CombinedOutput()
@@ -249,7 +249,7 @@ func FindInApi(IncidentNumberList []string, Package string) ([]string, *Incident
 
 							// CHECKING IF .repo FILE FROM COMPOSED LINK IS REAL
 							if strings.Contains(tmp, "key") && strings.Contains(tmp, IncidentNumberList[i]) {
-								fmt.Printf("Repo for the package %s exists! Success.   \n", Package)
+								log.Printf("Repo for the package %s exists! Success.   \n", Package)
 								count := 0
 								// HERE I CHECK FOR DUPLICATE .Repo FILES... AND THEN ADDING IT TO Repos SLICE
 								for _, k := range Repos {

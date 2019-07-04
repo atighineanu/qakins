@@ -23,21 +23,25 @@ const (
 
 //-----VARIABLES---------------------
 var (
-	arch   = "x86_64"
-	remote = flag.Bool("rem", false, "a flag that marks you run the script remote")
+	USER = utils.SSHInfo{
+		User: "atighineanu",
+		Pass: "mypass",
+		IP:   "my osc-having-machine IP"}
+	//----------------------FLAGS------------------------------------
+	howto      = flag.Bool("usage", false, "prints how to use instructions")
+	dockuser   = flag.String("dockuser", "", "docker username")
+	dockpasswd = flag.String("dockpasswd", "", "docker password")
+	dockrepo   = flag.String("dockrepo", "", "your docker repository")
+	pipename   = flag.String("pipename", "", "your concourse pipeline name")
+	packname   = flag.String("packname", "", "the package name")
+
+	//----------------------PACKAGES-TO-TEST-LIST---------------------
+	//var Test_pkg_list = []string{"drbd", "saptune", "sapconf", "SAPHanaSR", "yast2-network", "libqca2", "pacemaker"}
+	Test_pkg_list = []string{"velum", "wicked", "glib2", "cloud-init"} //"helm", "kubernetes-salt", "sles12-velum-image", "velum"} //, "python", "yast2-hana-update", "sapconf", "haproxy"}
+	howtoconst    = `<still under development...>`
 )
 
-//var Test_pkg_list = []string{"drbd", "saptune", "sapconf", "SAPHanaSR", "yast2-network", "libqca2", "pacemaker"}
-var Test_pkg_list = []string{"wicked", "glib2", "cloud-init"} //"helm", "kubernetes-salt", "sles12-velum-image", "velum"} //, "python", "yast2-hana-update", "sapconf", "haproxy"}
-var machines = make(map[string]bool)
-var Workdir = "/home/atighineanu/"
-
 //-----END OF VARIABLES LIST---------
-
-var USER = utils.SSHInfo{
-	User: "atighineanu",
-	Pass: "mypass",
-	IP:   "my osc-having-machine IP"}
 
 func main() {
 	//----------------------CHECKING ALL THE ACTIVE UPDATES---------------------------------------
@@ -52,7 +56,27 @@ func main() {
 	if err := json.NewDecoder(f).Decode(&a); err != nil {
 		log.Printf("Error: %s\n", err)
 	}
-
+	//----------------------CHECKING IF SOME PARAMS WERE PASSED FROM COMMANDLINE-------------------
+	flag.Parse()
+	if *howto {
+		fmt.Fprintf(os.Stdout, "%v\n", howtoconst)
+	}
+	if *dockuser != "" {
+		a.Username = *dockuser
+	}
+	if *dockpasswd != "" {
+		a.Password = *dockpasswd
+	}
+	if *dockrepo != "" {
+		a.DockerRepo = *dockrepo
+	}
+	if *packname != "" {
+		a.PackageName = *packname
+	}
+	if *pipename != "" {
+		a.PipeName = *pipename
+	}
+	//-------------------------------------EXECUTION ----------------------------------------------
 	for _, k := range Test_pkg_list {
 		a.PackageName = k
 		Repos, Incident := utils.FindInApi(List, k)

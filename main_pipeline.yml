@@ -1,0 +1,180 @@
+---
+#HOW IT IS RUN:
+# fly -t tutorial sp -p YOUR_PIPELINE_TITLE -c main_pipeline.yml \
+#     -v repo=your_update_repo \
+#     -v user=registryusername \
+#     -v password=yourpassword \
+#     -v docker_repository=repository -n
+resources:
+  - name: tf-cfg-state
+    type: git
+    source:
+      uri: https://github.com/atighineanu/TFCFGs.git
+      branch: master
+
+  - name: container_mkcaasp
+    type: docker-image
+    source:
+      username: ((user))
+      password: ((password))
+      repository: ((docker_repository))
+      tag: latest
+
+jobs:
+  - name: "ScenarioI(Updating all at once: SCC and TestPackage)"
+    public: true
+    serial: true
+    plan:
+      - get: tf-cfg-state
+      - get: container_mkcaasp
+      - task: CaaSP_Openstack_Terraform_Spawning
+        image: container_mkcaasp
+        config:
+          platform: linux
+
+          inputs:
+            - name: tf-cfg-state
+            
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/megarunner.sh
+
+      - task: CaaSP_Bootstrap&Tiller_Velum
+        image: container_mkcaasp
+        config:
+          platform: linux
+          inputs:
+            - name: tf-cfg-state
+            - name: some-files
+
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/megalister.sh
+
+      - task: CaaSP_Cluster_Registration_Update
+        image: container_mkcaasp
+        config:
+          platform: linux
+          inputs:
+            - name: some-files
+            - name: tf-cfg-state
+            
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/megaupdater.sh
+            args: [((repo))]
+
+      - task: CaaSP_Cluster_Running_HealthChecks
+        image: container_mkcaasp
+        config:
+          platform: linux
+          inputs:
+            - name: some-files
+            - name: tf-cfg-state
+            
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/healthchecks.sh
+
+      - task: CaaSP_Destroy
+        image: container_mkcaasp
+        config:
+          platform: linux
+          inputs:
+            - name: tf-cfg-state
+            - name: some-files
+
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/megakiller.sh
+
+  - name: "ScenarioII(Updating separately: 1st SCC; 2nd TestPackage)"
+    public: true
+    serial: true
+    plan:
+      - get: tf-cfg-state
+      - get: container_mkcaasp
+      - task: CaaSP_Openstack_Terraform_Spawning
+        image: container_mkcaasp
+        config:
+          platform: linux
+          inputs:
+            - name: tf-cfg-state
+            
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/megarunner.sh
+
+      - task: CaaSP_Bootstrap&Tiller_Velum
+        image: container_mkcaasp
+        config:
+          platform: linux
+          inputs:
+            - name: tf-cfg-state
+            - name: some-files
+
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/megalister.sh
+
+      - task: CaaSP_Cluster_Registration_Update_SCC
+        image: container_mkcaasp
+        config:
+          platform: linux
+          inputs:
+            - name: some-files
+            - name: tf-cfg-state
+            
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/megaupdaterII.sh
+
+      - task: CaaSP_Cluster_Update_The_Package
+        image: container_mkcaasp
+        config:
+          platform: linux
+          inputs:
+            - name: some-files
+            - name: tf-cfg-state
+            
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/updatethepackage.sh
+            args: [((repo))]
+
+      - task: CaaSP_Cluster_Running_HealthChecks
+        image: container_mkcaasp
+        config:
+          platform: linux
+          inputs:
+            - name: some-files
+            - name: tf-cfg-state
+            
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/healthchecks.sh
+
+      - task: CaaSP_Destroy
+        image: container_mkcaasp
+        config:
+          platform: linux
+          inputs:
+            - name: tf-cfg-state
+            - name: some-files
+
+          outputs:
+            - name: some-files
+          run:
+            path: tf-cfg-state/scripts/megakiller.sh
+
+      

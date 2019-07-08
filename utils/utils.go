@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 type Upd struct {
@@ -53,11 +54,13 @@ func ConcourseRunner(Repo string, Incident Incident, config PipelineCfg) *exec.C
 		pipename = config.PipeName
 	} else {
 		pipename = fmt.Sprintf("%s %s %s", config.PackageName, Incident.Base.Project, Incident.Update.Severity)
+		pipename = strings.Replace(pipename, "/", "-", 10)
 	}
 	arg := []string{"-t", "tutorial", "sp", "-p", pipename, "-c", "../main_pipeline.yml", "\\",
 		"-v", fmt.Sprintf("repo=%s", Repo), "-n", "\\",
 		"-v", fmt.Sprintf("user=%s", config.Username), "-n", "\\",
 		"-v", fmt.Sprintf("password=%s", config.Password), "-n", "\\",
+		"-v", fmt.Sprintf("package=%s", config.PackageName), "-n", "\\",
 		"-v", fmt.Sprintf("docker_repository=%s", config.DockerRepo), "-n", "\\"}
 	out := exec.Command("fly", arg...)
 	return out

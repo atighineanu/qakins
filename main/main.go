@@ -34,10 +34,11 @@ var (
 	dockrepo   = flag.String("dockrepo", "", "your docker repository")
 	pipename   = flag.String("pipename", "", "your concourse pipeline name")
 	packname   = flag.String("packname", "", "the package name")
+	justsearch = flag.Bool("justsearch", false, "just searching through Maint API")
 
 	//----------------------PACKAGES-TO-TEST-LIST---------------------
 	//var Test_pkg_list = []string{"drbd", "saptune", "sapconf", "SAPHanaSR", "yast2-network", "libqca2", "pacemaker"}
-	Test_pkg_list = []string{"velum", "wicked", "glib2", "cloud-init"} //"helm", "kubernetes-salt", "sles12-velum-image", "velum"} //, "python", "yast2-hana-update", "sapconf", "haproxy"}
+	Test_pkg_list = []string{"zeromq", "velum", "wicked", "glib2", "cloud-init"} //"helm", "kubernetes-salt", "sles12-velum-image", "velum"} //, "python", "yast2-hana-update", "sapconf", "haproxy"}
 	howtoconst    = `<still under development...>`
 )
 
@@ -58,6 +59,7 @@ func main() {
 	}
 	//----------------------CHECKING IF SOME PARAMS WERE PASSED FROM COMMANDLINE-------------------
 	flag.Parse()
+	var Testlist []string
 	if *howto {
 		fmt.Fprintf(os.Stdout, "%v\n", howtoconst)
 	}
@@ -72,12 +74,16 @@ func main() {
 	}
 	if *packname != "" {
 		a.PackageName = *packname
+		Testlist = append(Testlist, *packname)
+	} else {
+		Testlist = Test_pkg_list
 	}
 	if *pipename != "" {
 		a.PipeName = *pipename
 	}
 	//-------------------------------------EXECUTION ----------------------------------------------
-	for _, k := range Test_pkg_list {
+
+	for _, k := range Testlist {
 		a.PackageName = k
 		Repos, Incident := utils.FindInApi(List, k)
 		if len(Repos) > 0 {
@@ -85,12 +91,14 @@ func main() {
 			//fmt.Printf("%s:%v:%v %v\n", k, Incident.Base.ID, Incident.Requests.Maintenance_release[0], Incident.Checkers.Checks.Binary[0].Version)
 			if Incident != nil {
 				//--------------------FIRING A CONCOURSE PIPELINE--------------------------------
-				job := utils.ConcourseRunner(Repos[0], *Incident, a)
-				out, err := job.CombinedOutput()
-				if err != nil {
-					fmt.Fprintf(os.Stdout, "error: %s", err)
+				if !*justsearch {
+					job := utils.ConcourseRunner(Repos[0], *Incident, a)
+					out, err := job.CombinedOutput()
+					if err != nil {
+						fmt.Fprintf(os.Stdout, "error: %s", err)
+					}
+					fmt.Println(fmt.Sprintf("%s", string(out)))
 				}
-				fmt.Println(fmt.Sprintf("%s", string(out)))
 			}
 		}
 	}

@@ -28,18 +28,26 @@ var (
 		Pass: "mypass",
 		IP:   "my osc-having-machine IP"}
 	//----------------------FLAGS------------------------------------
-	howto      = flag.Bool("usage", false, "prints how to use instructions")
+	howto      = flag.Bool("help", false, "prints how to use instructions")
 	dockuser   = flag.String("dockuser", "", "docker username")
 	dockpasswd = flag.String("dockpasswd", "", "docker password")
 	dockrepo   = flag.String("dockrepo", "", "your docker repository")
 	pipename   = flag.String("pipename", "", "your concourse pipeline name")
 	packname   = flag.String("packname", "", "the package name")
 	justsearch = flag.Bool("justsearch", false, "just searching through Maint API")
+	login      = flag.Bool("login", false, "triggers login of fly")
+	triggerjob = flag.Bool("triggerjob", false, "triggers a job")
 
 	//----------------------PACKAGES-TO-TEST-LIST---------------------
 	//var Test_pkg_list = []string{"drbd", "saptune", "sapconf", "SAPHanaSR", "yast2-network", "libqca2", "pacemaker"}
-	Test_pkg_list = []string{"zeromq", "velum", "wicked", "glib2", "cloud-init"} //"helm", "kubernetes-salt", "sles12-velum-image", "velum"} //, "python", "yast2-hana-update", "sapconf", "haproxy"}
-	howtoconst    = `<still under development...>`
+	Test_pkg_list = []string{"kubernetes-salt", "cloud-init", "velum", "python-MarkupSafe", "zeromq", "velum", "wicked", "glib2"} //"helm", "kubernetes-salt", "sles12-velum-image", "velum"} //, "python", "yast2-hana-update", "sapconf", "haproxy"}
+	howtoconst    = `1. Make sure you fill proper information in /qakins/PipelineCfg.json
+	2. Make sure you indicate proper package names when you search for updates
+	   you can run: # main(or #go run main.go) -packname apache2 -justsearch
+	   in case you want to spawn concourse pipelines - you just run: # main 
+		- this way, the pipeline will be named <<PackageName:ProjectName:UpdateSeverity>>
+	   if you want to run a pipeline with custom settings, then flags like -pipename 
+	   might be handy`
 )
 
 //-----END OF VARIABLES LIST---------
@@ -61,7 +69,7 @@ func main() {
 	flag.Parse()
 	var Testlist []string
 	if *howto {
-		fmt.Fprintf(os.Stdout, "%v\n", howtoconst)
+		fmt.Printf("%s", howtoconst)
 	}
 	if *dockuser != "" {
 		a.Username = *dockuser
@@ -82,22 +90,31 @@ func main() {
 		a.PipeName = *pipename
 	}
 	//-------------------------------------EXECUTION ----------------------------------------------
-
-	for _, k := range Testlist {
-		a.PackageName = k
-		Repos, Incident := utils.FindInApi(List, k)
-		if len(Repos) > 0 {
-			fmt.Printf("%s \n %v\n", Repos, Incident.Base.ID)
-			//fmt.Printf("%s:%v:%v %v\n", k, Incident.Base.ID, Incident.Requests.Maintenance_release[0], Incident.Checkers.Checks.Binary[0].Version)
-			if Incident != nil {
-				//--------------------FIRING A CONCOURSE PIPELINE--------------------------------
-				if !*justsearch {
-					job := utils.ConcourseRunner(Repos[0], *Incident, a)
-					out, err := job.CombinedOutput()
-					if err != nil {
-						fmt.Fprintf(os.Stdout, "error: %s", err)
+	if *login {
+		utils.FlyLogin()
+	} else {
+		for _, k := range Testlist {
+			a.PackageName = k
+			Repos, Incident := utils.FindInApi(List, k)
+			if len(Repos) > 0 {
+				fmt.Printf("%s \n %v\n", Repos, Incident.Base.ID)
+				//fmt.Printf("%s:%v:%v %v\n", k, Incident.Base.ID, Incident.Requests.Maintenance_release[0], Incident.Checkers.Checks.Binary[0].Version)
+				if Incident != nil {
+					//--------------------FIRING A CONCOURSE PIPELINE--------------------------------
+					if !*justsearch {
+						utils.FlyLogin()
+						job, pipename := utils.ConcourseRunner(Repos[0], *Incident, a)
+						out, err := job.CombinedOutput()
+						if err != nil {
+							fmt.Fprintf(os.Stdout, "error: %s", err)
+						}
+						fmt.Println(fmt.Sprintf("%s", string(out)))
+						if *triggerjob {
+							utils.FlyJobTrigg(pipename)
+						}
+					} else {
+						fmt.Println(Repos)
 					}
-					fmt.Println(fmt.Sprintf("%s", string(out)))
 				}
 			}
 		}
